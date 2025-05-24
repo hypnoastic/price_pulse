@@ -1,0 +1,36 @@
+.navbar {
+    width: 95%;
+    margin: 2rem auto 0 auto;
+    background: #0070f3;
+    color: #fff;
+    padding: 1.2rem 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    border-radius: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+
+.navbar-title {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 2rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.navbar-title:hover {
+    color: #ffd600;
+}
+
+/* Floating Effect on Scroll */
+.navbar.scrolled {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1); /* Darker shadow */
+    transform: translateY(0.5rem); /* Slight lift effect */
+}
+
+

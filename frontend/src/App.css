@@ -1,0 +1,7 @@
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #e0ecff, #f9fafc);
+}
