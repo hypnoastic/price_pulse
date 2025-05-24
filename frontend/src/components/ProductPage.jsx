@@ -10,7 +10,7 @@ function ProductPage({ productId}) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:8000/api/product/${productId}`)
+    fetch(`https://price-pulse-os14.onrender.com/api/product/${productId}`)
       .then(res => res.json())
       .then(data => {
         setProduct(data);
@@ -21,7 +21,7 @@ function ProductPage({ productId}) {
   const handleAlert = async (e) => {
     e.preventDefault();
     setMsg('');
-    const res = await fetch('http://localhost:8000/api/alert', {
+    const res = await fetch('https://price-pulse-os14.onrender.com/api/alert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

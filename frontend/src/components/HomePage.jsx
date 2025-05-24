@@ -11,7 +11,7 @@ function HomePage({ onTrack }) {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8000/api/track', {
+      const res = await fetch('https://price-pulse-os14.onrender.com/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
