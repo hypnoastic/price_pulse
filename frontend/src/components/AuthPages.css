@@ -1,0 +1,119 @@
+/* AuthPages.css - shared styles for Landing, Login, and SignUp pages */
+
+.auth-bg {
+  min-height: 100vh;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-container, .landing-container {
+    width: 95%;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.3);
+  padding: 100px 300px;
+  min-width: 340px;
+  /* max-width: 90vw; */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-title, .landing-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #3b3b6d;
+  margin-bottom: 18px;
+  letter-spacing: 1px;
+}
+
+.landing-title {
+  font-size: 2.8rem;
+  margin-bottom: 10px;
+}
+
+.landing-info {
+  font-size: 1.15rem;
+  color: #4b5563;
+  text-align: center;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.landing-btn-group {
+  display: flex;
+  gap: 18px;
+}
+
+.landing-btn {
+  min-width: 120px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.auth-input {
+  padding: 12px 14px;
+  border: 1px solid #8a8a8a;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+}
+.auth-input:focus {
+  border: 1.5px solid #ffd600;
+}
+
+.auth-btn {
+  background: linear-gradient(90deg, #0051a8, #0070f3);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 0;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px 0 rgba(99, 102, 241, 0.08);
+}
+.auth-btn:hover {
+  background: linear-gradient(90deg, #0041a3, #005ce6);
+  transform: scale(1.04);
+  box-shadow: 0 8px 24px rgba(0, 112, 243, 0.2);
+}
+
+.auth-switch {
+  margin-top: 18px;
+  font-size: 0.98rem;
+  color: #6b7280;
+}
+
+.auth-link {
+  background: none;
+  border: none;
+  color: #0051a8;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-left: 2px;
+  font-size: 1rem;
+}
+.auth-link:hover {
+    background: none;
+  color: #0041a3;
+}
+
+.auth-error {
+  color: #ef4444;
+  margin-top: 14px;
+  font-size: 1rem;
+  text-align: center;
+}

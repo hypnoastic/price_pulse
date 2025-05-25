@@ -1,4 +1,7 @@
 .navbar {
+    align-items: center;
+    justify-content: space-between;
+    display: flex;
     width: 95%;
     margin: 2rem auto 0 auto;
     background: #0070f3;

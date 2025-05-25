@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, UploadFile, Form, BackgroundTasks
+from fastapi import FastAPI, UploadFile, Form, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, EmailStr
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -16,6 +16,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import dotenv
+from fastapi.responses import JSONResponse
+import asyncio
 
 # Load environment variables from .env file
 dotenv.load_dotenv(override=True)
@@ -113,21 +115,81 @@ scheduler.add_job(scheduled_scrape, 'interval', minutes=30)
 scheduler.start()
 
 @app.post("/api/track")
-def track_product(req: TrackRequest):
-    scraped = scrape_amazon(req.url)
+async def track_product(request: Request):
+    data = await request.json()
+    url = data.get('url')
+    uid = data.get('uid')
+    if not url or not uid:
+        return JSONResponse(status_code=422, content={"error": "Missing url or uid"})
+    scraped = scrape_amazon(url)
     if not scraped['name'] or not scraped['price']:
         return {"error": "Could not fetch product info."}
-    doc_ref = db.collection('products').add({
-        'url': str(req.url),
+    doc_ref = db.collection('users').document(uid).collection('products').add({
+        'url': str(url),
         'name': scraped['name'],
         'image': scraped['image'],
         'price': scraped['price']
     })
-    save_price_history(doc_ref[1].id, scraped['price'])
-    return {"product_id": doc_ref[1].id}
+    product_id = doc_ref[1].id
+    # Save price history immediately so chart has at least one point
+    db.collection('users').document(uid).collection('products').document(product_id).collection('history').add({
+        'price': scraped['price'],
+        'timestamp': firestore.SERVER_TIMESTAMP
+    })
+    return {"product_id": product_id, "title": scraped['name']}
+
+@app.get("/api/tracked")
+def get_tracked(uid: str):
+    products_ref = db.collection('users').document(uid).collection('products').stream()
+    products = []
+    for doc_ in products_ref:
+        data = doc_.to_dict()
+        data['product_id'] = doc_.id
+        products.append(data)
+    return {"products": products}
 
 @app.get("/api/product/{product_id}")
-def get_product(product_id: str):
+def get_product(product_id: str, uid: str = None):
+    # Try user-specific product first
+    if uid:
+        doc = db.collection('users').document(uid).collection('products').document(product_id).get()
+        if doc.exists:
+            data = doc.to_dict()
+            # Get price history
+            history = db.collection('users').document(uid).collection('products').document(product_id).collection('history').order_by('timestamp').stream()
+            prices = []
+            times = []
+            for h in history:
+                d = h.to_dict()
+                prices.append(d['price'])
+                times.append(d['timestamp'])
+            # If no price history, use current price and now
+            if not prices:
+                prices = [data['price']]
+                from datetime import datetime
+                times = [datetime.now()]
+            # Generate chart
+            if prices and times:
+                fig, ax = plt.subplots()
+                ax.plot(times, prices, marker='o')
+                ax.set_title('Price History')
+                ax.set_xlabel('Time')
+                ax.set_ylabel('Price')
+                buf = BytesIO()
+                plt.savefig(buf, format='png')
+                buf.seek(0)
+                img_b64 = base64.b64encode(buf.read()).decode('utf-8')
+                plt.close(fig)
+            else:
+                img_b64 = None
+            return {
+                "name": data['name'],
+                "image": data['image'],
+                "price": data['price'],
+                "chart": img_b64,
+                "url": data['url']
+            }
+    # fallback to global products if not found
     doc = db.collection('products').document(product_id).get()
     if not doc.exists:
         return {"error": "Product not found."}
