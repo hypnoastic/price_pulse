@@ -150,21 +150,4 @@ The application is currently deployed at:
 - Price updates are limited to 20-minute intervals
 - Some Amazon products may not be scrapable
 
-## Contributing
 
-1. Fork the repository
-2. Create a new branch for your feature
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Acknowledgments
-
-- Firebase for authentication and database
-- Amazon for product data
-- FastAPI for the efficient backend
-- React team for the awesome frontend framework
