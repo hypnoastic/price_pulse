@@ -18,6 +18,7 @@ from email.mime.multipart import MIMEMultipart
 import dotenv
 from fastapi.responses import JSONResponse
 import asyncio
+from datetime import datetime
 
 # Load environment variables from .env file
 dotenv.load_dotenv(override=True)
@@ -27,6 +28,11 @@ cred = credentials.Certificate("cred.json")
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+print("[FIREBASE] Project ID:", firebase_admin.get_app().project_id)
+print("[SCHEDULER] Top-level collections in Firestore:")
+for col in db.collections():
+    print(f" - {col.id}")
 
 app = FastAPI()
 app.add_middleware(
@@ -60,25 +66,105 @@ def scrape_amazon(url):
     }
 
 def save_price_history(product_id, price):
-    db.collection('products').document(product_id).collection('history').add({
-        'price': price,
-        'timestamp': firestore.SERVER_TIMESTAMP
-    })
+    try:
+        doc_ref = db.collection('products').document(product_id).collection('history').add({
+            'price': price,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+        print(f"[SAVE_PRICE] Successfully saved price {price} for product {product_id}")
+        return doc_ref
+    except Exception as e:
+        print(f"[SAVE_PRICE] Error saving price: {e}")
+        return None
+
+def check_alerts(product_id, price, name, url):
+    # Check if there are any alerts for this product
+    alerts = db.collection('alerts').where('product_id', '==', product_id).stream()
+    for alert in alerts:
+        alert_data = alert.to_dict()
+        if price <= alert_data['target_price']:
+            # Send email and delete the alert
+            send_email(alert_data['email'], name, price, url)
+            db.collection('alerts').document(alert.id).delete()
+            print(f"[ALERTS] Sent alert email for {product_id} to {alert_data['email']}")
 
 def scheduled_scrape():
-    products = db.collection('products').stream()
-    for doc in products:
-        data = doc.to_dict()
-        scraped = scrape_amazon(data['url'])
-        if scraped['price']:
-            save_price_history(doc.id, scraped['price'])
-            # Check for alert
-            alert = db.collection('alerts').document(doc.id).get()
-            if alert.exists:
-                alert_data = alert.to_dict()
-                if scraped['price'] <= alert_data['target_price']:
-                    send_email(alert_data['email'], data['name'], scraped['price'], data['url'])
-                    db.collection('alerts').document(doc.id).delete()
+    print("[SCHEDULER] Running scheduled_scrape...")
+    print("[SCHEDULER] Listing document paths for all collection groups:")
+    collections = list(db.collection_group('products').get())
+    print(f"[SCHEDULER] Found {len(collections)} documents in products collection group")
+    
+    try:
+        users = list(db.collection('users').stream())
+        print("[SCHEDULER] User collection stream successful")
+    except Exception as e:
+        print(f"[SCHEDULER] Error getting users collection: {e}")
+        return
+
+    print(f"[SCHEDULER] User IDs found: {[u.id for u in users]}")
+    user_count = len(users)
+    product_count = 0
+    print(f"[SCHEDULER] Found {user_count} users to process.")
+    
+    for user_doc in users:
+        user_id = user_doc.id
+        print(f"[SCHEDULER] Processing user {user_id}")
+        try:
+            user_ref = db.collection('users').document(user_id)
+            user_data = user_ref.get().to_dict()
+            print(f"[SCHEDULER] User data: {user_data}")
+        except Exception as e:
+            print(f"[SCHEDULER] Error getting user data for {user_id}: {e}")
+            continue
+
+        try:
+            products = db.collection('users').document(user_id).collection('products').stream()
+            product_list = list(products)
+            print(f"[SCHEDULER] Successfully got products for user {user_id}")
+        except Exception as e:
+            print(f"[SCHEDULER] Error getting products for user {user_id}: {e}")
+            continue
+            
+        print(f"[SCHEDULER] User {user_id} has {len(product_list)} products.")
+        for doc_ in product_list:
+            product_count += 1
+            data = doc_.to_dict()
+            print(f"[SCHEDULER] Scraping {data.get('name')} for user {user_id} (product id: {doc_.id})")
+            # Try scraping up to 20 times (with a short delay) until price is found
+            max_attempts = 20
+            attempt = 0
+            price_found = False
+            scraped = None
+            while attempt < max_attempts and not price_found:
+                scraped = scrape_amazon(data['url'])
+                if scraped['price']:
+                    price_found = True
+                else:
+                    attempt += 1
+                    import time
+                    time.sleep(2)
+            if price_found:
+                prod_ref = db.collection('users').document(user_id).collection('products').document(doc_.id)
+                prod_data = prod_ref.get().to_dict()
+                price_array = prod_data.get('price_array', [])
+                if not isinstance(price_array, list):
+                    price_array = []
+                try:
+                    price_val = float(scraped['price'])
+                    # Check price alerts before updating the price
+                    check_alerts(doc_.id, price_val, data['name'], data['url'])
+                    
+                    from datetime import datetime
+                    now = datetime.now()
+                    price_array.append({'price': price_val, 'timestamp': now})
+                    
+                    prod_ref.update({'price_array': price_array, 'price': price_val})
+                    print(f"[SCHEDULER] Updated price_array for {data.get('name')} (user {user_id}) with price {price_val}")
+                except Exception as e:
+                    print(f"[SCHEDULER] Error updating price: {e}")
+            else:
+                print(f"[SCHEDULER] Failed to scrape price for {data.get('name')} (user {user_id}) after {max_attempts} attempts")
+    print(f"[SCHEDULER] Processed {user_count} users and {product_count} products.")
 
 def send_email(email, name, price, url):
     # Real email sender using Gmail SMTP
@@ -111,32 +197,73 @@ def send_email(email, name, price, url):
         print(f"Failed to send email: {e}")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(scheduled_scrape, 'interval', minutes=30)
+scheduler.add_job(scheduled_scrape, 'interval', minutes=20)
 scheduler.start()
+
+print("[DEBUG] Listing all user document IDs in Firestore at startup:")
+user_docs = list(db.collection('users').stream())
+for doc in user_docs:
+    print(f" - {doc.id}")
+print(f"[DEBUG] Total user docs found: {len(user_docs)}")
 
 @app.post("/api/track")
 async def track_product(request: Request):
+    print("[TRACK] Starting product tracking")
     data = await request.json()
     url = data.get('url')
     uid = data.get('uid')
+    print(f"[TRACK] Received request with url={url} and uid={uid}")
+    
     if not url or not uid:
+        print("[TRACK] Missing url or uid")
         return JSONResponse(status_code=422, content={"error": "Missing url or uid"})
-    scraped = scrape_amazon(url)
+        
+    try:
+        scraped = scrape_amazon(url)
+        print(f"[TRACK] Scrape results: {scraped}")
+    except Exception as e:
+        print(f"[TRACK] Scraping failed: {e}")
+        return {"error": f"Failed to scrape product: {str(e)}"}
+        
     if not scraped['name'] or not scraped['price']:
+        print("[TRACK] Scrape incomplete - missing name or price")
         return {"error": "Could not fetch product info."}
-    doc_ref = db.collection('users').document(uid).collection('products').add({
-        'url': str(url),
-        'name': scraped['name'],
-        'image': scraped['image'],
-        'price': scraped['price']
-    })
-    product_id = doc_ref[1].id
-    # Save price history immediately so chart has at least one point
-    db.collection('users').document(uid).collection('products').document(product_id).collection('history').add({
-        'price': scraped['price'],
-        'timestamp': firestore.SERVER_TIMESTAMP
-    })
-    return {"product_id": product_id, "title": scraped['name']}
+    
+    now = datetime.now()
+    print(f"[TRACK] Adding product to Firestore for user {uid}")
+    
+    try:
+        # First verify the user document exists
+        user_ref = db.collection('users').document(uid)
+        if not user_ref.get().exists:
+            print(f"[TRACK] Creating new user document for {uid}")
+            user_ref.set({'created_at': firestore.SERVER_TIMESTAMP})
+            
+        # Add the product
+        doc_ref = db.collection('users').document(uid).collection('products').add({
+            'url': str(url),
+            'name': scraped['name'],
+            'image': scraped['image'],
+            'price': scraped['price'],
+            'price_array': [
+                {'price': scraped['price'], 'timestamp': now}
+            ]
+        })
+        product_id = doc_ref[1].id
+        print(f"[TRACK] Successfully added product {product_id} for user {uid}")
+        
+        # Add initial history entry
+        history_ref = db.collection('users').document(uid).collection('products').document(product_id).collection('history').add({
+            'price': scraped['price'],
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+        print(f"[TRACK] Added initial history entry for product {product_id}")
+        
+        return {"product_id": product_id, "title": scraped['name']}
+        
+    except Exception as e:
+        print(f"[TRACK] Error adding product to Firestore: {e}")
+        return {"error": f"Database error: {str(e)}"}
 
 @app.get("/api/tracked")
 def get_tracked(uid: str):
@@ -150,20 +277,22 @@ def get_tracked(uid: str):
 
 @app.get("/api/product/{product_id}")
 def get_product(product_id: str, uid: str = None):
-    # Try user-specific product first
     if uid:
         doc = db.collection('users').document(uid).collection('products').document(product_id).get()
         if doc.exists:
             data = doc.to_dict()
-            # Get price history
-            history = db.collection('users').document(uid).collection('products').document(product_id).collection('history').order_by('timestamp').stream()
-            prices = []
-            times = []
-            for h in history:
-                d = h.to_dict()
-                prices.append(d['price'])
-                times.append(d['timestamp'])
-            # If no price history, use current price and now
+            # Use price_array for graph
+            price_array = data.get('price_array', [])
+            prices = [p['price'] for p in price_array]
+            times = [p['timestamp'] for p in price_array]
+            # If no price_array, fallback to history subcollection
+            if not prices:
+                history = db.collection('users').document(uid).collection('products').document(product_id).collection('history').order_by('timestamp').stream()
+                for h in history:
+                    d = h.to_dict()
+                    prices.append(d['price'])
+                    times.append(d['timestamp'])
+            # If still no data, use current price and now
             if not prices:
                 prices = [data['price']]
                 from datetime import datetime
@@ -221,17 +350,43 @@ def get_product(product_id: str, uid: str = None):
     }
 
 @app.post("/api/alert")
-def set_alert(req: AlertRequest):
-    db.collection('alerts').document(req.product_id).set({
+async def set_alert(req: AlertRequest):
+    print(f"[ALERT] Setting alert for product {req.product_id} at target price {req.target_price}")
+    
+    # First verify the product exists and get its current price
+    found = False
+    current_price = None
+    product_name = None
+    product_url = None
+    
+    # Search in all users' products
+    users = db.collection('users').stream()
+    for user in users:
+        product_ref = db.collection('users').document(user.id).collection('products').document(req.product_id)
+        product_doc = product_ref.get()
+        if product_doc.exists:
+            data = product_doc.to_dict()
+            found = True
+            current_price = data.get('price')
+            product_name = data.get('name')
+            product_url = data.get('url')
+            break
+    
+    if not found:
+        return JSONResponse(status_code=404, content={"error": "Product not found"})
+        
+    # Save the alert
+    alert_ref = db.collection('alerts').document()
+    alert_ref.set({
+        'product_id': req.product_id,
         'target_price': req.target_price,
         'email': req.email
     })
-    # Immediately check if the current price already satisfies the alert
-    doc = db.collection('products').document(req.product_id).get()
-    if doc.exists:
-        data = doc.to_dict()
-        if data.get('price') is not None and data['price'] <= req.target_price:
-            send_email(req.email, data['name'], data['price'], data['url'])
-            db.collection('alerts').document(req.product_id).delete()
-            return {"message": "Alert set and email sent immediately!"}
+    
+    # Check if current price already meets the target
+    if current_price and current_price <= req.target_price:
+        send_email(req.email, product_name, current_price, product_url)
+        alert_ref.delete()
+        return {"message": "Alert set and email sent immediately!"}
+        
     return {"message": "Alert set!"}

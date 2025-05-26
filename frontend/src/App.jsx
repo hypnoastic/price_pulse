@@ -21,7 +21,7 @@ function App() {
   const goHome = () => setProductId(null);
 
   // Set your backend URL here for easy switching
-  window.BACKEND_URL = "https://price-pulse-os14.onrender.com";
+  window.BACKEND_URL = "http://127.0.0.1:8000";
 
   return (
     <Router>

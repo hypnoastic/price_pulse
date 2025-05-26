@@ -51,6 +51,7 @@ function HomePage({ onTrack, user }) {
     let attempts = 0;
     let success = false;
     let newProduct = null;
+
     // Check for duplicate by URL before tracking
     const q = query(collection(db, 'users', user.uid, 'products'));
     const querySnapshot = await getDocs(q);
@@ -64,6 +65,7 @@ function HomePage({ onTrack, user }) {
       setLoading(false);
       return;
     }
+
     while (attempts < 20 && !success) {
       try {
         const res = await fetch(`${window.BACKEND_URL}/api/track`, {
@@ -76,19 +78,25 @@ function HomePage({ onTrack, user }) {
           newProduct = { product_id: data.product_id, url, title: data.title };
           await setDoc(doc(db, 'users', user.uid, 'products', data.product_id), newProduct, { merge: true });
           success = true;
-        } else {
-          setError(data.error || 'Failed to track product.');
+          break;
         }
-      } catch {
-        setError('Server error.');
+      } catch (err) {
+        // Silent fail - will retry
       }
       attempts++;
       if (!success && attempts < 20) {
         await new Promise(res => setTimeout(res, 1000));
       }
     }
+    
     setLoading(false);
-    if (success && newProduct) {
+    
+    if (!success) {
+      setError('Failed to track product after multiple attempts. Please try again later.');
+      return;
+    }
+    
+    if (newProduct) {
       setUrl('');
       // Refetch all products to update the list
       const q = query(collection(db, 'users', user.uid, 'products'));
