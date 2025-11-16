@@ -1,13 +1,16 @@
 #!/bin/bash
+set -e
 
-# Install dependencies
+echo "Installing dependencies..."
 pip install -r requirements.txt
 
-# Fetch Prisma binaries
-python -m prisma py fetch
+echo "Fetching Prisma binaries..."
+python -m prisma py fetch || echo "Fetch failed, continuing..."
 
-# Generate Prisma client
+echo "Generating Prisma client..."
 python -m prisma generate
 
-# Push database schema
+echo "Pushing database schema..."
 python -m prisma db push
+
+echo "Build completed successfully!"

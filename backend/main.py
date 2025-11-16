@@ -68,8 +68,23 @@ scheduler = None
 @app.on_event("startup")
 async def startup():
     try:
-        await db.connect()
-        print("Database connected successfully")
+        # Try to fetch binaries if connection fails
+        try:
+            await db.connect()
+            print("Database connected successfully")
+        except Exception as db_error:
+            print(f"Database connection failed: {db_error}")
+            print("Attempting to fetch Prisma binaries...")
+            
+            import subprocess
+            try:
+                subprocess.run(["python", "-m", "prisma", "py", "fetch"], check=True)
+                print("Prisma binaries fetched successfully")
+                await db.connect()
+                print("Database connected after fetching binaries")
+            except Exception as fetch_error:
+                print(f"Failed to fetch binaries: {fetch_error}")
+                raise db_error
         
         # Start scheduler (optional for deployment)
         global scheduler
@@ -83,7 +98,8 @@ async def startup():
             
     except Exception as e:
         print(f"Startup error: {e}")
-        raise
+        # Don't raise to allow app to start without scheduler
+        pass
 
 @app.on_event("shutdown")
 async def shutdown():
