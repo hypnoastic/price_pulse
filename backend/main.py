@@ -67,13 +67,23 @@ scheduler = None
 
 @app.on_event("startup")
 async def startup():
-    await db.connect()
-    # Start scheduler
-    global scheduler
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(scheduled_price_check, 'interval', hours=1)  # Every hour
-    scheduler.start()
-    print("Price tracking scheduler started - checking every hour")
+    try:
+        await db.connect()
+        print("Database connected successfully")
+        
+        # Start scheduler (optional for deployment)
+        global scheduler
+        try:
+            scheduler = BackgroundScheduler()
+            scheduler.add_job(scheduled_price_check, 'interval', hours=1)  # Every hour
+            scheduler.start()
+            print("Price tracking scheduler started - checking every hour")
+        except Exception as e:
+            print(f"Warning: Could not start scheduler: {e}")
+            
+    except Exception as e:
+        print(f"Startup error: {e}")
+        raise
 
 @app.on_event("shutdown")
 async def shutdown():
