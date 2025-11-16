@@ -1,39 +1,226 @@
-.navbar {
-    align-items: center;
-    justify-content: space-between;
-    display: flex;
-    width: 95%;
-    margin: 2rem auto 0 auto;
-    background: #0070f3;
-    color: #fff;
-    padding: 1.2rem 2rem;
+.app-navbar {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  height: 80px;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbar-brand:hover {
+  color: var(--primary);
+  transform: scale(1.02);
+}
+
+.brand-icon {
+  font-size: 1.75rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: var(--primary);
+  color: white;
+}
+
+.nav-icon {
+  font-size: 1rem;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--background);
+  border-radius: 2rem;
+  border: 1px solid var(--border);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.user-email {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--error);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.logout-icon {
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar-content {
+    padding: 0.75rem 0;
+    height: 70px;
+  }
+  
+  .navbar-left {
+    gap: 1.5rem;
+  }
+  
+  .navbar-brand {
+    font-size: 1.25rem;
+  }
+  
+  .brand-icon {
     font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-    border-radius: 16px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  }
+  
+  .navbar-nav {
+    display: none;
+  }
+  
+  .user-details {
+    display: none;
+  }
+  
+  .user-info {
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+  }
+  
+  .logout-btn {
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+  }
+  
+  .logout-btn span {
+    display: none;
+  }
+  
+  .logout-icon {
+    font-size: 1.125rem;
+  }
 }
 
-
-.navbar-title {
-    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    font-size: 2rem;
-    letter-spacing: 2px;
-    cursor: pointer;
-    transition: color 0.2s;
+@media (max-width: 480px) {
+  .navbar-content {
+    height: 60px;
+  }
+  
+  .navbar-brand {
+    font-size: 1.125rem;
+  }
+  
+  .brand-icon {
+    font-size: 1.25rem;
+  }
+  
+  .user-menu {
+    gap: 0.5rem;
+  }
 }
-
-.navbar-title:hover {
-    color: #ffd600;
-}
-
-/* Floating Effect on Scroll */
-.navbar.scrolled {
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1); /* Darker shadow */
-    transform: translateY(0.5rem); /* Slight lift effect */
-}
-
-

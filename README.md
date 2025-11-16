@@ -1,170 +1,236 @@
-# Price Pulse - Amazon Price Tracker
+# PricePulse 2.0 - Modern Amazon Price Tracker
 
-Price Pulse is a full-stack web application that helps users track Amazon product prices and get email notifications when prices drop to their target amount. Built with React, FastAPI, and Firebase.
+A modern, full-stack SaaS application for tracking Amazon product prices with intelligent alerts and beautiful data visualization.
 
-## Features
+## 🚀 Features
 
-- 🔍 Track any Amazon product by URL
-- 📊 View price history charts
-- 📧 Set email alerts for price drops
-- 🔄 Automatic price updates every 20 minutes
-- 📱 Responsive design
-- 🔐 User authentication
-- 💾 Real-time data sync with Firebase
+- **Modern SaaS Landing Page** - Beautiful, responsive design with floating navbar
+- **JWT Authentication** - Secure user authentication without Firebase dependency
+- **PostgreSQL + Prisma** - Modern database stack with type-safe ORM
+- **Scrapy Integration** - Robust web scraping with better reliability
+- **Interactive Charts** - Beautiful price history visualization with Chart.js
+- **Real-time Alerts** - Email notifications when prices hit target amounts
+- **Responsive Design** - Works perfectly on all devices
+- **Fast Performance** - Built with modern technologies for speed
 
-## Tech Stack
+## 🛠 Tech Stack
 
 ### Frontend
-- React 18
-- Vite
-- Firebase Authentication
-- Firebase Firestore
-- React Router
-- Chart.js
-- CSS3 with modern animations
+- **React 18** - Modern React with hooks
+- **Vite** - Lightning-fast build tool
+- **Chart.js** - Interactive price charts
+- **React Router** - Client-side routing
+- **Modern CSS** - Custom CSS with gradients and animations
 
 ### Backend
-- FastAPI
-- Firebase Admin SDK
-- APScheduler for automated price checks
-- BeautifulSoup4 for web scraping
-- Matplotlib for chart generation
-- SMTP for email notifications
+- **FastAPI** - High-performance Python web framework
+- **PostgreSQL** - Reliable, scalable database
+- **Prisma** - Type-safe database ORM
+- **Scrapy** - Professional web scraping framework
+- **JWT Authentication** - Secure token-based auth
+- **APScheduler** - Automated price checking
+- **SMTP Email** - Price alert notifications
 
-## Setup Instructions
+## 📋 Prerequisites
 
-### Prerequisites
-- Node.js 16+ and npm
+- Node.js 18+ and npm
 - Python 3.8+
-- Firebase account
-- Gmail account (for sending notifications)
+- PostgreSQL database (recommend Neon for cloud)
+- Gmail account for email notifications
 
-### Frontend Setup
+## 🚀 Quick Start
 
-1. Navigate to the frontend directory:
-   ```zsh
-   cd frontend
-   ```
+### 1. Database Setup
 
-2. Install dependencies:
-   ```zsh
-   npm install
-   ```
+Create a PostgreSQL database (we recommend [Neon](https://neon.tech) for easy cloud setup):
 
-3. Create a Firebase project and update `src/firebase.js` with your Firebase configuration.
-
-4. Start the development server:
-   ```zsh
-   npm run dev
-   ```
-
-### Backend Setup
-
-1. Navigate to the backend directory:
-   ```zsh
-   cd backend
-   ```
-
-2. Create a virtual environment and activate it:
-   ```zsh
-   python -m venv venv
-   source venv/bin/activate
-   ```
-
-3. Install dependencies:
-   ```zsh
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables in `.env`:
-   ```
-   GMAIL_USER=your_email@gmail.com
-   GMAIL_APP_PASSWORD=your_gmail_app_password
-   ```
-
-5. Add your Firebase Admin SDK credentials in `cred.json`
-
-6. Start the backend server:
-   ```zsh
-   uvicorn main:app --reload
-   ```
-
-## Project Structure
-
-```
-price_pulse/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── App.jsx
-│   │   └── firebase.js
-│   └── package.json
-└── backend/
-    ├── main.py
-    ├── requirements.txt
-    └── cred.json
+```bash
+# Get your DATABASE_URL from Neon dashboard
+# Format: postgresql://username:password@host:port/database
 ```
 
-## How It Works
+### 2. Backend Setup
 
-1. **User Authentication**:
-   - Users sign up/login using Firebase Authentication
-   - Each user has their own product tracking list
+```bash
+cd backend
 
-2. **Product Tracking**:
-   - Users paste Amazon product URLs
-   - Backend scrapes initial product data
-   - Data is stored in Firebase Firestore
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-3. **Price Monitoring**:
-   - Backend scheduler runs every 20 minutes
-   - Scrapes latest prices for all tracked products
-   - Updates price history in Firestore
+# Install dependencies
+pip install -r requirements.txt
 
-4. **Price Alerts**:
-   - Users set target prices for products
-   - When price drops below target:
-     - User receives email notification
-     - Alert is automatically removed
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your database URL and email credentials
 
-5. **Data Visualization**:
-   - Price history displayed as interactive charts
-   - Real-time updates when new prices are fetched
+# Generate Prisma client and run migrations
+prisma generate
+prisma db push
 
-## Security Features
+# Start the server
+uvicorn main:app --reload
+```
 
-- Firebase Authentication for user management
-- Secure CORS policy
-- Environment variables for sensitive data
-- Firebase security rules for data access
+### 3. Frontend Setup
 
-## Production Deployment
+```bash
+cd frontend
 
-The application is currently deployed at:
-- Frontend: Your frontend URL
-- Backend: https://price-pulse-os14.onrender.com
+# Install dependencies
+npm install
 
-## Known Limitations
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your API URL (default: http://localhost:8000)
 
-- Amazon may block IPs with too many requests
-- Price updates are limited to 20-minute intervals
-- Some Amazon products may not be scrapable
+# Start development server
+npm run dev
+```
 
-## Contributing
+## 🔧 Environment Variables
+
+### Backend (.env)
+```env
+DATABASE_URL="postgresql://username:password@host:port/database"
+SECRET_KEY="your-super-secret-jwt-key-here"
+GMAIL_USER="your-email@gmail.com"
+GMAIL_APP_PASSWORD="your-gmail-app-password"
+```
+
+### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+## 📊 Database Schema
+
+The application uses the following main models:
+
+- **User** - User accounts with JWT authentication
+- **Product** - Tracked Amazon products
+- **PriceHistory** - Historical price data for charts
+- **Alert** - Price alert configurations
+
+## 🕷️ Web Scraping
+
+The application uses Scrapy for robust Amazon product scraping:
+
+- **Rotating User Agents** - Avoid detection
+- **Retry Logic** - Handle failed requests
+- **Rate Limiting** - Respect server resources
+- **Data Validation** - Clean and validate scraped data
+
+## 📧 Email Notifications
+
+Price alerts are sent via Gmail SMTP:
+
+1. Enable 2-factor authentication on your Gmail account
+2. Generate an App Password for PricePulse
+3. Use the App Password in your environment variables
+
+## 🎨 UI/UX Features
+
+- **Floating Navigation** - Modern glassmorphism design
+- **Gradient Backgrounds** - Beautiful color schemes
+- **Interactive Charts** - Hover effects and animations
+- **Responsive Grid** - Perfect on all screen sizes
+- **Loading States** - Smooth user experience
+- **Error Handling** - User-friendly error messages
+
+## 📱 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+
+### Products
+- `POST /api/products/track` - Track new product
+- `GET /api/products` - Get user's tracked products
+- `GET /api/products/{id}` - Get product details with history
+
+### Alerts
+- `POST /api/alerts` - Create price alert
+
+## 🔄 Automated Price Checking
+
+The system automatically checks prices every 20 minutes:
+
+1. Fetches all tracked products from database
+2. Scrapes current prices using Scrapy
+3. Updates price history
+4. Checks for price alerts
+5. Sends email notifications if targets are met
+
+## 🚀 Deployment
+
+### Backend Deployment (Render/Railway)
+1. Connect your GitHub repository
+2. Set environment variables
+3. Deploy with automatic builds
+
+### Frontend Deployment (Vercel/Netlify)
+1. Connect your GitHub repository
+2. Set build command: `npm run build`
+3. Set output directory: `dist`
+4. Deploy with automatic builds
+
+## 🔒 Security Features
+
+- **JWT Authentication** - Secure token-based auth
+- **Password Hashing** - Bcrypt password security
+- **CORS Protection** - Controlled cross-origin requests
+- **Input Validation** - Pydantic model validation
+- **SQL Injection Protection** - Prisma ORM safety
+
+## 🎯 Performance Optimizations
+
+- **Database Indexing** - Fast query performance
+- **Connection Pooling** - Efficient database connections
+- **Lazy Loading** - Load data when needed
+- **Caching** - Reduce redundant API calls
+- **Optimized Images** - Fast loading product images
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Scraping Failures**
+   - Amazon may block requests temporarily
+   - Try different user agents
+   - Implement longer delays
+
+2. **Database Connection**
+   - Check DATABASE_URL format
+   - Ensure database is accessible
+   - Verify credentials
+
+3. **Email Notifications**
+   - Use Gmail App Password, not regular password
+   - Enable 2-factor authentication
+   - Check spam folder
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a new branch for your feature
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Firebase for authentication and database
-- Amazon for product data
-- FastAPI for the efficient backend
-- React team for the awesome frontend framework
+- **FastAPI** - Amazing Python web framework
+- **Prisma** - Excellent database toolkit
+- **Scrapy** - Powerful scraping framework
+- **Chart.js** - Beautiful charting library
+- **React** - Fantastic frontend framework
+
+---
+
+Built with ❤️ for smart shoppers who never want to overpay again!

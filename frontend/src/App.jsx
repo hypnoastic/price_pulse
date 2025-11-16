@@ -1,42 +1,92 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import HomePage from './components/HomePage';
 import ProductPage from './components/ProductPage';
-import LoginPage from './components/LoginPage';
-import SignUpPage from './components/SignUpPage';
+import AlertsPage from './components/AlertsPage';
+import SavedItemsPage from './components/SavedItemsPage';
+import { LoginPage, SignUpPage } from './components/AuthPages';
 import LandingPage from './components/LandingPage';
-import { auth } from './firebase';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
   const [productId, setProductId] = useState(null);
-  const [user, setUser] = useState(() => auth.currentUser);
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
-    return () => unsubscribe();
+  useEffect(() => {
+    // Check for stored user and token
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (token && storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+    setLoading(false);
   }, []);
 
-  const goHome = () => setProductId(null);
+  const handleLogin = (userData) => {
+    setUser(userData);
+  };
 
-  // Set your backend URL here for easy switching
-  window.BACKEND_URL = "https://price-pulse-os14.onrender.com";
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setProductId(null);
+  };
+
+  const goHome = () => {
+    setProductId(null);
+    setCurrentPage('dashboard');
+  };
+
+  const navigateToPage = (page) => {
+    setProductId(null);
+    setCurrentPage(page);
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <Router>
       <div className="app-container">
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={user ? <Navigate to="/home" /> : <LoginPage onLogin={setUser} />} />
-          <Route path="/signup" element={user ? <Navigate to="/home" /> : <SignUpPage onSignUp={setUser} />} />
+          <Route path="/login" element={user ? <Navigate to="/home" /> : <LoginPage onLogin={handleLogin} />} />
+          <Route path="/signup" element={user ? <Navigate to="/home" /> : <SignUpPage onSignUp={handleLogin} />} />
           <Route path="/home" element={user ? (
             <>
-              <Navbar goHome={goHome} user={user} />
-              {!productId ? (
-                <HomePage onTrack={setProductId} goHome={goHome} user={user} />
-              ) : (
+              <Navbar 
+                goHome={goHome} 
+                user={user} 
+                onLogout={handleLogout}
+                currentPage={currentPage}
+                onNavigate={navigateToPage}
+              />
+              {productId ? (
                 <ProductPage productId={productId} goHome={goHome} user={user} />
+              ) : currentPage === 'dashboard' ? (
+                <HomePage onTrack={setProductId} goHome={goHome} user={user} />
+              ) : currentPage === 'alerts' ? (
+                <AlertsPage />
+              ) : currentPage === 'saved' ? (
+                <SavedItemsPage onTrack={setProductId} />
+              ) : (
+                <HomePage onTrack={setProductId} goHome={goHome} user={user} />
               )}
             </>
           ) : <Navigate to="/login" />} />
@@ -47,4 +97,3 @@ function App() {
 }
 
 export default App;
-
