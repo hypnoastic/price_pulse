@@ -245,9 +245,10 @@ export const SignUpPage = ({ onSignUp }) => {
     }
   };
 
-  const handleOTPVerified = () => {
-    setOtpVerified(true);
-    setShowOTP(false);
+  const handleOTPVerified = (user) => {
+    // Account is already created, redirect to home
+    onSignUp(user);
+    navigate('/home');
   };
 
   const handleBackFromOTP = () => {
@@ -275,6 +276,8 @@ export const SignUpPage = ({ onSignUp }) => {
             <div className="auth-form-container">
               <OTPVerification 
                 email={formData.email}
+                password={formData.password}
+                name={formData.name}
                 onVerified={handleOTPVerified}
                 onBack={handleBackFromOTP}
               />

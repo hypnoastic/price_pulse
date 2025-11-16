@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './OTPVerification.css';
 
-const OTPVerification = ({ email, onVerified, onBack }) => {
+const OTPVerification = ({ email, password, name, onVerified, onBack }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -63,14 +63,19 @@ const OTPVerification = ({ email, onVerified, onBack }) => {
         },
         body: JSON.stringify({
           email,
-          otp: otpString
+          otp: otpString,
+          password,
+          name
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        onVerified();
+        // Store token and user data
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        onVerified(data.user);
       } else {
         setError(data.detail || 'Invalid OTP');
       }
