@@ -6,6 +6,7 @@ import AlertsPage from './components/AlertsPage';
 import SavedItemsPage from './components/SavedItemsPage';
 import { LoginPage, SignUpPage } from './components/AuthPages';
 import LandingPage from './components/LandingPage';
+import GoogleCallback from './components/GoogleCallback';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -68,6 +69,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={user ? <Navigate to="/home" /> : <LoginPage onLogin={handleLogin} />} />
           <Route path="/signup" element={user ? <Navigate to="/home" /> : <SignUpPage onSignUp={handleLogin} />} />
+          <Route path="/auth/callback" element={<GoogleCallback onLogin={handleLogin} />} />
           <Route path="/home" element={user ? (
             <>
               <Navbar 

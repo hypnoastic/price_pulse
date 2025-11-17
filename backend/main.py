@@ -6,6 +6,7 @@ from prisma import Prisma
 from auth import create_access_token, verify_token, verify_password, get_password_hash
 from scraper import scraper
 from email_service import send_otp_email, send_price_alert_email, generate_otp
+from google_auth import GoogleAuth
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
@@ -53,10 +54,18 @@ class OTPVerify(BaseModel):
     password: str
     name: str = None
 
+class GoogleAuthCode(BaseModel):
+    code: str
+
 # Dependency to get current user
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     user_id = verify_token(token)
+    
+    # Ensure database connection
+    if not db.is_connected():
+        await db.connect()
+        
     user = await db.user.find_unique(where={"id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -237,6 +246,115 @@ async def login(user: UserLogin):
         "token_type": "bearer",
         "user": {"id": db_user.id, "email": db_user.email, "name": db_user.name}
     }
+
+@app.get("/api/auth/google/url")
+async def get_google_auth_url():
+    """Get Google OAuth URL"""
+    auth_url = GoogleAuth.get_auth_url()
+    return {"auth_url": auth_url}
+
+@app.post("/api/auth/google/callback")
+async def google_auth_callback(auth_data: GoogleAuthCode):
+    """Handle Google OAuth callback"""
+    try:
+        # Ensure database connection
+        if not db.is_connected():
+            await db.connect()
+            
+        # Exchange code for tokens
+        tokens = await GoogleAuth.exchange_code_for_tokens(auth_data.code)
+        
+        # Decode ID token to get user info
+        user_info = GoogleAuth.decode_id_token(tokens["id_token"])
+        
+        google_id = user_info["sub"]
+        email = user_info["email"]
+        name = user_info.get("name")
+        picture = user_info.get("picture")
+        
+        # Check if user exists by Google ID or email
+        existing_user = await db.user.find_first(
+            where={
+                "OR": [
+                    {"googleId": google_id},
+                    {"email": email}
+                ]
+            }
+        )
+        
+        if existing_user:
+            # Update existing user with Google info
+            user = await db.user.update(
+                where={"id": existing_user.id},
+                data={
+                    "googleId": google_id,
+                    "name": name or existing_user.name,
+                    "picture": picture,
+                    "refreshToken": tokens.get("refresh_token"),
+                    "verified": True
+                }
+            )
+        else:
+            # Create new user
+            user = await db.user.create(
+                data={
+                    "email": email,
+                    "googleId": google_id,
+                    "name": name,
+                    "picture": picture,
+                    "refreshToken": tokens.get("refresh_token"),
+                    "verified": True
+                }
+            )
+        
+        # Create our own JWT token
+        access_token = create_access_token(data={"sub": user.id})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "picture": user.picture,
+                "verified": user.verified
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Google authentication failed: {str(e)}")
+
+@app.post("/api/auth/refresh-google-token")
+async def refresh_google_token(current_user = Depends(get_current_user)):
+    """Refresh Google access token"""
+    if not current_user.refreshToken:
+        raise HTTPException(status_code=400, detail="No refresh token available")
+    
+    try:
+        tokens = await GoogleAuth.refresh_access_token(current_user.refreshToken)
+        return {"access_token": tokens["access_token"]}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Token refresh failed: {str(e)}")
+
+@app.post("/api/auth/logout")
+async def logout(current_user = Depends(get_current_user)):
+    """Logout user and revoke Google tokens"""
+    try:
+        # Revoke Google refresh token if exists
+        if current_user.refreshToken:
+            await GoogleAuth.revoke_token(current_user.refreshToken)
+            
+            # Clear refresh token from database
+            await db.user.update(
+                where={"id": current_user.id},
+                data={"refreshToken": None}
+            )
+        
+        return {"message": "Logged out successfully"}
+    except Exception as e:
+        # Still return success even if revocation fails
+        return {"message": "Logged out successfully"}
 
 @app.post("/api/products/track")
 async def track_product(product: ProductTrack, current_user = Depends(get_current_user)):
@@ -436,6 +554,10 @@ def scheduled_price_check():
 async def health_check():
     """Health check endpoint"""
     try:
+        # Ensure database connection
+        if not db.is_connected():
+            await db.connect()
+            
         # Check database connection
         await db.user.count()
         
@@ -451,6 +573,15 @@ async def health_check():
         }
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unhealthy: {str(e)}")
+
+@app.get("/keep-alive")
+async def keep_alive():
+    """Simple endpoint to keep server alive - for cron jobs"""
+    return {
+        "status": "alive",
+        "timestamp": datetime.utcnow().isoformat(),
+        "message": "Server is running"
+    }
 
 @app.get("/api/admin/trigger-price-check")
 async def manual_price_check():

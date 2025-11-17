@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import OTPVerification from './OTPVerification';
+import GoogleAuth from './GoogleAuth';
 import './AuthPages.css';
 
 export const LoginPage = ({ onLogin }) => {
@@ -105,6 +106,12 @@ export const LoginPage = ({ onLogin }) => {
             <div className="form-header">
               <h1>Welcome Back</h1>
               <p>Sign in to your account to continue tracking prices</p>
+            </div>
+
+            <GoogleAuth onLogin={onLogin} type="login" />
+            
+            <div className="auth-divider">
+              <span>or</span>
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form">
@@ -353,6 +360,12 @@ export const SignUpPage = ({ onSignUp }) => {
                   Email verified
                 </div>
               )}
+            </div>
+
+            <GoogleAuth onLogin={onSignUp} type="signup" />
+            
+            <div className="auth-divider">
+              <span>or</span>
             </div>
 
             <form onSubmit={handleSubmit} className="auth-form">
