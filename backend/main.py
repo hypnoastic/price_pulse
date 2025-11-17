@@ -85,18 +85,29 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 @app.on_event("startup")
 async def startup():
     try:
-        # Try to fetch binaries if connection fails
+        # Always fetch binaries first in production
+        import subprocess
+        import os
+        
+        if os.getenv("RENDER"):
+            print("Production environment detected, fetching Prisma binaries...")
+            try:
+                subprocess.run(["python", "-m", "prisma", "py", "fetch"], check=True)
+                subprocess.run(["python", "-m", "prisma", "generate"], check=True)
+                print("Prisma setup completed")
+            except Exception as e:
+                print(f"Prisma setup failed: {e}")
+        
+        # Try to connect to database
         try:
             await db.connect()
             print("Database connected successfully")
         except Exception as db_error:
             print(f"Database connection failed: {db_error}")
-            print("Attempting to fetch Prisma binaries...")
-            
-            import subprocess
+            # Try one more time with fresh binaries
             try:
                 subprocess.run(["python", "-m", "prisma", "py", "fetch"], check=True)
-                print("Prisma binaries fetched successfully")
+                subprocess.run(["python", "-m", "prisma", "generate"], check=True)
                 await db.connect()
                 print("Database connected after fetching binaries")
             except Exception as fetch_error:
