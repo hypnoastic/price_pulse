@@ -264,16 +264,20 @@ async def get_google_auth_url():
 @app.post("/api/auth/google/callback")
 async def google_auth_callback(auth_data: GoogleAuthCode):
     """Handle Google OAuth callback"""
+    print(f"DEBUG: Received callback with code: {auth_data.code[:20]}...")
     try:
         # Ensure database connection
         if not db.is_connected():
             await db.connect()
             
         # Exchange code for tokens
+        print("DEBUG: About to exchange code for tokens")
         tokens = await GoogleAuth.exchange_code_for_tokens(auth_data.code)
+        print(f"DEBUG: Token exchange successful, got tokens: {list(tokens.keys())}")
         
         # Decode ID token to get user info
         user_info = GoogleAuth.decode_id_token(tokens["id_token"])
+        print(f"DEBUG: Decoded user info: {user_info.get('email')}")
         
         google_id = user_info["sub"]
         email = user_info["email"]
@@ -291,6 +295,7 @@ async def google_auth_callback(auth_data: GoogleAuthCode):
         )
         
         if existing_user:
+            print(f"DEBUG: Updating existing user: {email}")
             # Update existing user with Google info
             user = await db.user.update(
                 where={"id": existing_user.id},
@@ -303,6 +308,7 @@ async def google_auth_callback(auth_data: GoogleAuthCode):
                 }
             )
         else:
+            print(f"DEBUG: Creating new user: {email}")
             # Create new user
             user = await db.user.create(
                 data={
@@ -317,6 +323,7 @@ async def google_auth_callback(auth_data: GoogleAuthCode):
         
         # Create our own JWT token
         access_token = create_access_token(data={"sub": user.id})
+        print(f"DEBUG: Successfully created JWT token for user: {user.id}")
         
         return {
             "access_token": access_token,
@@ -331,6 +338,9 @@ async def google_auth_callback(auth_data: GoogleAuthCode):
         }
         
     except Exception as e:
+        print(f"DEBUG: Google auth callback error: {str(e)}")
+        import traceback
+        print(f"DEBUG: Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=400, detail=f"Google authentication failed: {str(e)}")
 
 @app.post("/api/auth/refresh-google-token")
