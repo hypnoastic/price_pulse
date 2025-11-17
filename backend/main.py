@@ -1,4 +1,9 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables first
+load_dotenv()
+
 import asyncio
 from datetime import datetime, timedelta
 
@@ -7,15 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from prisma import Prisma
-from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from auth import create_access_token, verify_token, verify_password, get_password_hash
 from scraper import scraper
 from email_service import send_otp_email, send_price_alert_email, generate_otp
 from google_auth import GoogleAuth
-
-load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(

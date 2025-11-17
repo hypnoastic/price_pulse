@@ -57,47 +57,60 @@ const GoogleCallback = ({ onLogin }) => {
 
   if (loading) {
     return (
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="auth-form-section">
-            <div className="auth-form-container">
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <h2>Completing Google Sign In...</h2>
-                <p>Please wait while we set up your account</p>
-              </div>
-            </div>
-          </div>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+      }}>
+        <div style={{
+          textAlign: 'center'
+        }}>
+          <div className="loading-spinner" style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #f3f3f3',
+            borderTop: '4px solid #4F46E5',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{
+            color: '#666',
+            fontSize: '16px',
+            margin: 0
+          }}>Signing you in...</p>
         </div>
       </div>
     );
   }
 
   if (error) {
+    setTimeout(() => navigate('/login'), 2000);
     return (
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="auth-form-section">
-            <div className="auth-form-container">
-              <div className="error-container">
-                <div className="error-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
-                  </svg>
-                </div>
-                <h2>Authentication Failed</h2>
-                <p>{error}</p>
-                <button 
-                  onClick={() => navigate('/login')} 
-                  className="btn btn-primary"
-                >
-                  Back to Login
-                </button>
-              </div>
-            </div>
-          </div>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+      }}>
+        <div style={{
+          textAlign: 'center',
+          color: '#ef4444'
+        }}>
+          <p>Authentication failed. Redirecting...</p>
         </div>
       </div>
     );

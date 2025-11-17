@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 # Google OAuth Configuration
-GOOGLE_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID") or os.getenv("GMAIL_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET") or os.getenv("GMAIL_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/callback")
 
 class GoogleAuth:
