@@ -5,21 +5,15 @@ from urllib.parse import urlencode
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
-GOOGLE_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID") or "72758212540-jb1u4toarbq99vscm8j4uffu1e4p9th8.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET") or "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"
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/callback")
-
-print(f"Debug - GMAIL_CLIENT_ID from env: {os.getenv('GMAIL_CLIENT_ID')}")
-print(f"Debug - All env vars with GMAIL: {[(k, v) for k, v in os.environ.items() if 'GMAIL' in k]}")
 
 class GoogleAuth:
     @staticmethod
     def get_auth_url() -> str:
         """Generate Google OAuth URL"""
-        print(f"Using Client ID: {GOOGLE_CLIENT_ID}")
-        print(f"Using Client Secret: {GOOGLE_CLIENT_SECRET[:10]}..." if GOOGLE_CLIENT_SECRET else "None")
-        print(f"Using Redirect URI: {GOOGLE_REDIRECT_URI}")
-        
         params = {
             "client_id": GOOGLE_CLIENT_ID,
             "redirect_uri": GOOGLE_REDIRECT_URI,
@@ -28,9 +22,7 @@ class GoogleAuth:
             "access_type": "offline",
             "prompt": "consent"
         }
-        auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
-        print(f"Generated Auth URL: {auth_url}")
-        return auth_url
+        return f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
     
     @staticmethod
     async def exchange_code_for_tokens(code: str) -> Dict[str, Any]:

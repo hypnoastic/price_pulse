@@ -1,27 +1,36 @@
+import os
+import asyncio
+from datetime import datetime, timedelta
+
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from prisma import Prisma
+from dotenv import load_dotenv
+from apscheduler.schedulers.background import BackgroundScheduler
+
 from auth import create_access_token, verify_token, verify_password, get_password_hash
 from scraper import scraper
 from email_service import send_otp_email, send_price_alert_email, generate_otp
 from google_auth import GoogleAuth
-from datetime import datetime, timedelta
-import os
-from dotenv import load_dotenv
-from apscheduler.schedulers.background import BackgroundScheduler
-import asyncio
 
 load_dotenv()
 
-app = FastAPI(title="PricePulse API", version="2.0.0")
+# Initialize FastAPI app
+app = FastAPI(
+    title="PricePulse API",
+    version="2.0.0",
+    description="Smart Amazon Price Tracker with Google OAuth"
+)
 security = HTTPBearer()
 db = Prisma()
+scheduler = None
 
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Configure for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,9 +79,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
-# Global scheduler instance
-scheduler = None
 
 @app.on_event("startup")
 async def startup():
@@ -583,14 +589,7 @@ async def keep_alive():
         "message": "Server is running"
     }
 
-@app.get("/api/admin/trigger-price-check")
-async def manual_price_check():
-    """Manually trigger price check (for testing)"""
-    try:
-        scheduled_price_check()
-        return {"message": "Price check triggered successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to trigger price check: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn

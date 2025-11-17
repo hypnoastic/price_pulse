@@ -1,80 +1,92 @@
-# PricePulse 2.0 - Modern Amazon Price Tracker
+# 🛒 PricePulse - Smart Amazon Price Tracker
 
-A modern, full-stack SaaS application for tracking Amazon product prices with intelligent alerts and beautiful data visualization.
+A modern, full-stack SaaS application for tracking Amazon product prices with intelligent alerts, Google OAuth authentication, and beautiful data visualization.
 
-## 🚀 Features
+![PricePulse Banner](https://via.placeholder.com/800x200/4F46E5/FFFFFF?text=PricePulse+-+Smart+Price+Tracking)
 
-- **Modern SaaS Landing Page** - Beautiful, responsive design with floating navbar
-- **JWT Authentication** - Secure user authentication without Firebase dependency
-- **PostgreSQL + Prisma** - Modern database stack with type-safe ORM
-- **Scrapy Integration** - Robust web scraping with better reliability
-- **Interactive Charts** - Beautiful price history visualization with Chart.js
-- **Real-time Alerts** - Email notifications when prices hit target amounts
-- **Responsive Design** - Works perfectly on all devices
-- **Fast Performance** - Built with modern technologies for speed
+## ✨ Features
 
-## 🛠 Tech Stack
+- 🔐 **Google OAuth Authentication** - Secure login with Google accounts
+- 📧 **Email OTP Verification** - Alternative registration with email verification
+- 🕷️ **Robust Web Scraping** - Scrapy-powered Amazon product tracking
+- 📊 **Interactive Price Charts** - Beautiful Chart.js visualizations
+- 🚨 **Smart Price Alerts** - Email notifications when prices drop
+- 📱 **Responsive Design** - Perfect on all devices
+- ⚡ **Real-time Updates** - Automated price checking every hour
+- 🎨 **Modern UI/UX** - Glassmorphism design with smooth animations
+
+## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18** - Modern React with hooks
-- **Vite** - Lightning-fast build tool
-- **Chart.js** - Interactive price charts
-- **React Router** - Client-side routing
-- **Modern CSS** - Custom CSS with gradients and animations
+- **React 18** with Vite
+- **Chart.js** for price visualization
+- **React Router** for navigation
+- **Axios** for API calls
+- **Modern CSS** with gradients and animations
 
 ### Backend
-- **FastAPI** - High-performance Python web framework
-- **PostgreSQL** - Reliable, scalable database
-- **Prisma** - Type-safe database ORM
-- **Scrapy** - Professional web scraping framework
+- **FastAPI** - High-performance Python framework
+- **PostgreSQL** with Prisma ORM
+- **Scrapy** - Professional web scraping
 - **JWT Authentication** - Secure token-based auth
-- **APScheduler** - Automated price checking
-- **SMTP Email** - Price alert notifications
-
-## 📋 Prerequisites
-
-- Node.js 18+ and npm
-- Python 3.8+
-- PostgreSQL database (recommend Neon for cloud)
-- Gmail account for email notifications
+- **Google OAuth 2.0** - Social login integration
+- **APScheduler** - Automated background tasks
+- **Gmail API** - Email notifications
 
 ## 🚀 Quick Start
 
-### 1. Database Setup
+### Prerequisites
+- Node.js 18+ and npm
+- Python 3.8+
+- PostgreSQL database (recommend [Neon](https://neon.tech))
+- Google Cloud Console project for OAuth
 
-Create a PostgreSQL database (we recommend [Neon](https://neon.tech) for easy cloud setup):
+### 1. Clone Repository
+```bash
+git clone <repository-url>
+cd price_pulse
+```
 
+### 2. Database Setup
+Create a PostgreSQL database on [Neon](https://neon.tech):
 ```bash
 # Get your DATABASE_URL from Neon dashboard
 # Format: postgresql://username:password@host:port/database
 ```
 
-### 2. Backend Setup
+### 3. Google OAuth Setup
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add authorized origins and redirect URIs:
+   - **Origins**: `http://localhost:3000`, `https://your-domain.com`
+   - **Redirect URIs**: `http://localhost:3000/auth/callback`, `https://your-domain.com/auth/callback`
 
+### 4. Backend Setup
 ```bash
 cd backend
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Setup environment variables
 cp .env.example .env
-# Edit .env with your database URL and email credentials
+# Edit .env with your credentials (see Environment Variables section)
 
-# Generate Prisma client and run migrations
-prisma generate
-prisma db push
+# Generate Prisma client and push schema
+python -m prisma generate
+python -m prisma db push
 
-# Start the server
+# Start server
 uvicorn main:app --reload
 ```
 
-### 3. Frontend Setup
-
+### 5. Frontend Setup
 ```bash
 cd frontend
 
@@ -83,7 +95,7 @@ npm install
 
 # Setup environment variables
 cp .env.example .env
-# Edit .env with your API URL (default: http://localhost:8000)
+# Edit .env with API URL
 
 # Start development server
 npm run dev
@@ -93,10 +105,22 @@ npm run dev
 
 ### Backend (.env)
 ```env
+# Database
 DATABASE_URL="postgresql://username:password@host:port/database"
+
+# JWT Security
 SECRET_KEY="your-super-secret-jwt-key-here"
+
+# Gmail for notifications
 GMAIL_USER="your-email@gmail.com"
-GMAIL_APP_PASSWORD="your-gmail-app-password"
+GMAIL_CLIENT_ID="your-google-client-id"
+GMAIL_CLIENT_SECRET="your-google-client-secret"
+GMAIL_REFRESH_TOKEN="your-gmail-refresh-token"
+
+# Google OAuth
+GOOGLE_OAUTH_CLIENT_ID="your-google-client-id"
+GOOGLE_OAUTH_CLIENT_SECRET="your-google-client-secret"
+GOOGLE_REDIRECT_URI="http://localhost:3000/auth/callback"
 ```
 
 ### Frontend (.env)
@@ -106,80 +130,152 @@ VITE_API_URL=http://localhost:8000
 
 ## 📊 Database Schema
 
-The application uses the following main models:
+```sql
+-- Users with Google OAuth support
+User {
+  id, email, password?, name?, picture?
+  googleId?, refreshToken?, verified
+  products[], alerts[]
+}
 
-- **User** - User accounts with JWT authentication
-- **Product** - Tracked Amazon products
-- **PriceHistory** - Historical price data for charts
-- **Alert** - Price alert configurations
+-- Tracked products
+Product {
+  id, url, name, image?, currentPrice
+  userId, priceHistory[], alerts[]
+}
 
-## 🕷️ Web Scraping
+-- Price history for charts
+PriceHistory {
+  id, price, timestamp, productId
+}
 
-The application uses Scrapy for robust Amazon product scraping:
+-- Price alerts
+Alert {
+  id, targetPrice, email, userId, productId
+}
 
-- **Rotating User Agents** - Avoid detection
-- **Retry Logic** - Handle failed requests
-- **Rate Limiting** - Respect server resources
-- **Data Validation** - Clean and validate scraped data
+-- OTP verification
+OTPVerification {
+  id, email, otp, expiresAt, verified
+}
+```
 
-## 📧 Email Notifications
-
-Price alerts are sent via Gmail SMTP:
-
-1. Enable 2-factor authentication on your Gmail account
-2. Generate an App Password for PricePulse
-3. Use the App Password in your environment variables
-
-## 🎨 UI/UX Features
-
-- **Floating Navigation** - Modern glassmorphism design
-- **Gradient Backgrounds** - Beautiful color schemes
-- **Interactive Charts** - Hover effects and animations
-- **Responsive Grid** - Perfect on all screen sizes
-- **Loading States** - Smooth user experience
-- **Error Handling** - User-friendly error messages
-
-## 📱 API Endpoints
+## 🔌 API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
+```http
+POST /api/auth/register          # Email registration
+POST /api/auth/login             # Email login
+POST /api/auth/send-otp          # Send OTP for verification
+POST /api/auth/verify-otp        # Verify OTP and create account
+GET  /api/auth/google/url        # Get Google OAuth URL
+POST /api/auth/google/callback   # Handle Google OAuth callback
+POST /api/auth/logout            # Logout and revoke tokens
+```
 
 ### Products
-- `POST /api/products/track` - Track new product
-- `GET /api/products` - Get user's tracked products
-- `GET /api/products/{id}` - Get product details with history
+```http
+POST /api/products/track         # Track new product
+GET  /api/products               # Get user's products
+GET  /api/products/{id}          # Get product with price history
+DELETE /api/products/{id}        # Delete tracked product
+```
 
 ### Alerts
-- `POST /api/alerts` - Create price alert
+```http
+GET  /api/alerts                 # Get user's alerts
+POST /api/alerts                 # Create price alert
+DELETE /api/alerts/{id}          # Delete alert
+```
 
-## 🔄 Automated Price Checking
+### System
+```http
+GET  /health                     # Health check
+GET  /keep-alive                 # Keep server alive (for cron jobs)
+```
 
-The system automatically checks prices every 20 minutes:
+## 🕷️ Web Scraping Features
 
-1. Fetches all tracked products from database
-2. Scrapes current prices using Scrapy
-3. Updates price history
-4. Checks for price alerts
-5. Sends email notifications if targets are met
+- **Rotating User Agents** - Avoid detection
+- **Retry Logic** - Handle failed requests gracefully
+- **Rate Limiting** - Respect server resources
+- **Data Validation** - Clean and validate scraped data
+- **Error Handling** - Robust error recovery
+
+## 📧 Email Setup
+
+### Gmail Configuration
+1. Enable 2-factor authentication
+2. Generate App Password:
+   - Google Account → Security → 2-Step Verification → App passwords
+   - Generate password for "Mail"
+3. Use App Password in `GMAIL_CLIENT_SECRET`
+
+### Gmail API Setup (for OAuth)
+1. Enable Gmail API in Google Cloud Console
+2. Get refresh token using OAuth 2.0 Playground
+3. Add refresh token to environment variables
 
 ## 🚀 Deployment
 
-### Backend Deployment (Render/Railway)
-1. Connect your GitHub repository
-2. Set environment variables
-3. Deploy with automatic builds
+### Backend (Render/Railway)
+```bash
+# Build command
+pip install -r requirements.txt && python -m prisma generate && python -m prisma db push
 
-### Frontend Deployment (Vercel/Netlify)
-1. Connect your GitHub repository
-2. Set build command: `npm run build`
-3. Set output directory: `dist`
-4. Deploy with automatic builds
+# Start command
+uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+### Frontend (Vercel/Netlify)
+```bash
+# Build command
+npm run build
+
+# Output directory
+dist
+```
+
+### Environment Variables for Production
+Update redirect URIs in Google Cloud Console:
+```
+https://your-frontend.vercel.app/auth/callback
+https://your-backend.onrender.com
+```
+
+## 🔄 Automated Price Checking
+
+The system automatically checks prices every hour:
+1. Fetches all tracked products
+2. Scrapes current prices using Scrapy
+3. Updates price history
+4. Checks for price alerts
+5. Sends email notifications
+
+### Keep Server Alive
+For free hosting tiers, use a cron job to hit `/keep-alive` every 10 minutes:
+```bash
+# Using cron-job.org or similar service
+curl https://your-backend.onrender.com/keep-alive
+```
+
+## 🎨 UI Components
+
+- **LandingPage** - Hero section with features
+- **AuthPages** - Login/Register with Google OAuth
+- **GoogleAuth** - Google sign-in button
+- **OTPVerification** - Email verification flow
+- **HomePage** - Dashboard with tracked products
+- **ProductPage** - Individual product with price chart
+- **SavedItemsPage** - All tracked products grid
+- **AlertsPage** - Manage price alerts
+- **Navbar** - Floating navigation with glassmorphism
 
 ## 🔒 Security Features
 
 - **JWT Authentication** - Secure token-based auth
-- **Password Hashing** - Bcrypt password security
+- **Google OAuth 2.0** - Industry-standard social login
+- **Password Hashing** - Bcrypt encryption
 - **CORS Protection** - Controlled cross-origin requests
 - **Input Validation** - Pydantic model validation
 - **SQL Injection Protection** - Prisma ORM safety
@@ -189,39 +285,74 @@ The system automatically checks prices every 20 minutes:
 - **Database Indexing** - Fast query performance
 - **Connection Pooling** - Efficient database connections
 - **Lazy Loading** - Load data when needed
-- **Caching** - Reduce redundant API calls
 - **Optimized Images** - Fast loading product images
+- **Background Tasks** - Non-blocking price updates
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Scraping Failures**
-   - Amazon may block requests temporarily
-   - Try different user agents
-   - Implement longer delays
+**Scraping Failures**
+```bash
+# Amazon may temporarily block requests
+# Solution: Implement longer delays, rotate user agents
+```
 
-2. **Database Connection**
-   - Check DATABASE_URL format
-   - Ensure database is accessible
-   - Verify credentials
+**Database Connection**
+```bash
+# Check DATABASE_URL format
+# Ensure database is accessible
+python -m prisma db push
+```
 
-3. **Email Notifications**
-   - Use Gmail App Password, not regular password
-   - Enable 2-factor authentication
-   - Check spam folder
+**Google OAuth Errors**
+```bash
+# Verify redirect URIs in Google Cloud Console
+# Check client ID and secret
+# Ensure APIs are enabled
+```
+
+**Email Notifications**
+```bash
+# Use Gmail App Password, not regular password
+# Enable 2-factor authentication
+# Check spam folder
+```
+
+## 📁 Project Structure
+
+```
+price_pulse/
+├── backend/
+│   ├── prisma/schema.prisma     # Database schema
+│   ├── scrapy_spider/           # Web scraping logic
+│   ├── main.py                  # FastAPI application
+│   ├── auth.py                  # JWT authentication
+│   ├── google_auth.py           # Google OAuth logic
+│   ├── scraper.py               # Scraping interface
+│   ├── email_service.py         # Email notifications
+│   └── requirements.txt         # Python dependencies
+├── frontend/
+│   ├── src/
+│   │   ├── components/          # React components
+│   │   ├── App.jsx             # Main application
+│   │   └── main.jsx            # Entry point
+│   ├── package.json            # Node dependencies
+│   └── vite.config.js          # Vite configuration
+└── README.md                   # This file
+```
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -230,7 +361,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Scrapy** - Powerful scraping framework
 - **Chart.js** - Beautiful charting library
 - **React** - Fantastic frontend framework
+- **Google** - OAuth 2.0 and Gmail APIs
 
 ---
 
-Built with ❤️ for smart shoppers who never want to overpay again!
+**Built with ❤️ for smart shoppers who never want to overpay again!**
+
+For support, email: [your-email@domain.com](mailto:your-email@domain.com)
