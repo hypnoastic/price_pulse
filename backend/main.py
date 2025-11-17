@@ -266,10 +266,6 @@ async def google_auth_callback(auth_data: GoogleAuthCode):
     """Handle Google OAuth callback"""
     print(f"DEBUG: Received callback with code: {auth_data.code[:20]}...")
     try:
-        # Ensure database connection
-        if not db.is_connected():
-            await db.connect()
-            
         # Exchange code for tokens
         print("DEBUG: About to exchange code for tokens")
         tokens = await GoogleAuth.exchange_code_for_tokens(auth_data.code)
@@ -283,6 +279,14 @@ async def google_auth_callback(auth_data: GoogleAuthCode):
         email = user_info["email"]
         name = user_info.get("name")
         picture = user_info.get("picture")
+        
+        # Ensure fresh database connection
+        try:
+            await db.disconnect()
+        except:
+            pass
+        await db.connect()
+        print("DEBUG: Database reconnected")
         
         # Check if user exists by Google ID or email
         existing_user = await db.user.find_first(
