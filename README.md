@@ -364,7 +364,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Google** - OAuth 2.0 and Gmail APIs
 
 ---
-
-**Built with ❤️ for smart shoppers who never want to overpay again!**
-
-For support, email: [your-email@domain.com](mailto:your-email@domain.com)
